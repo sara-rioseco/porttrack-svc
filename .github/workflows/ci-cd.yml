@@ -80,6 +80,9 @@ jobs:
   build:
     name: Build & Push Image
     runs-on: ubuntu-latest
+    permissions:
+      packages: write # Grant write permission for packages
+      contents: read # Often needed for checking out code
     needs: [test, security]
     outputs:
       image-digest: ${{ steps.build.outputs.digest }}
