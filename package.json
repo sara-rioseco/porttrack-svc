@@ -27,6 +27,7 @@
     "docker:run": "docker run -p 8080:8080 porttrack-api"
   },
   "devDependencies": {
+    "@eslint/js": "^9.32.0",
     "eslint": "^9.32.0",
     "jest": "^29.7.0",
     "supertest": "^6.3.3"
@@ -77,4 +78,3 @@
     }
   }
 }
-

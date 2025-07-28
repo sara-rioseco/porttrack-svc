@@ -154,7 +154,7 @@ app.use(morgan(':json', {
        const logData = JSON.parse(message.trim());
        enhancedLogger.info('HTTP Request', logData);
      } catch (e) {
-       enhancedLogger.info('HTTP Request', { raw: message.trim() });
+       enhancedLogger.info('HTTP Request', { raw: message.trim() + e.message });
      }
    }
  } 
@@ -181,7 +181,7 @@ app.use((req, res, next) => {
 });
 
 // Mock data
-let ships = [
+const ships = [
  {
    id: 'SHIP001',
    name: 'Atlantic Voyager',
@@ -215,14 +215,14 @@ let ships = [
  }
 ];
 
-let staff = [
+const staff = [
  { id: 'STAFF001', name: 'Carlos Rodriguez', role: 'port_manager', shift: 'day', active: true, location: 'Control Tower' },
  { id: 'STAFF002', name: 'Lisa Chen', role: 'crane_operator', shift: 'day', active: true, location: 'Berth A-12' },
  { id: 'STAFF003', name: 'Mohammed Ali', role: 'security_guard', shift: 'night', active: false, location: 'Gate 1' },
  { id: 'STAFF004', name: 'Anna Kowalski', role: 'customs_officer', shift: 'day', active: true, location: 'Customs Office' }
 ];
 
-let operations = [];
+const operations = [];
 
 // Initialize metrics with current data
 const updateMetrics = () => {
@@ -359,15 +359,15 @@ app.post('/api/v1/ships/:id/berth', (req, res) => {
    }
    
    // Simulate potential failure for monitoring (10% failure rate)
-   if (Math.random() < 0.1) {
-     criticalOperationsFailed.labels('berth').inc();
-     enhancedLogger.error('Critical berthing operation failed', { 
-       shipId: ship.id, 
-       berth: berthNumber,
-       reason: 'simulated_failure' 
-     });
-     return res.status(500).json({ error: 'Berthing operation failed' });
-   }
+  //  if (Math.random() < 0.1) {
+  //    criticalOperationsFailed.labels('berth').inc();
+  //    enhancedLogger.error('Critical berthing operation failed', { 
+  //      shipId: ship.id, 
+  //      berth: berthNumber,
+  //      reason: 'simulated_failure' 
+  //    });
+  //    return res.status(500).json({ error: 'Berthing operation failed' });
+  //  }
    
    const previousStatus = ship.status;
    ship.status = 'docked';
@@ -596,7 +596,7 @@ app.post('/api/v1/auth/login', (req, res) => {
 // }, 30000); // Every 30 seconds
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
  enhancedLogger.error('Unhandled application error', { 
    error: err.message, 
    stack: err.stack,
@@ -615,27 +615,87 @@ app.use((req, res) => {
  });
  res.status(404).json({ error: 'Route not found' });
 });
+// Store interval ID for cleanup
+let backgroundInterval;
 
-// Graceful shutdown
-const gracefulShutdown = (signal) => {
- enhancedLogger.info(`${signal} received, shutting down gracefully`);
- fluentClient.end(() => {
-   enhancedLogger.info('Fluentd client closed');
-   process.exit(0);
- });
+// Replace your existing setInterval with:
+if (NODE_ENV !== 'test') {
+  // eslint-disable-next-line no-undef
+  backgroundInterval = setInterval(() => {
+    // Randomly update ship statuses
+    if (Math.random() < 0.3) {
+      const randomShip = ships[Math.floor(Math.random() * ships.length)];
+      const statuses = ['approaching', 'docked', 'loading', 'departing'];
+      const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+      
+      if (randomShip.status !== newStatus) {
+        const previousStatus = randomShip.status;
+        randomShip.status = newStatus;
+        
+        updateMetrics();
+        
+        enhancedLogger.info('Ship status automatically updated', {
+          shipId: randomShip.id,
+          shipName: randomShip.name,
+          previousStatus,
+          newStatus,
+          automated: true
+        });
+      }
+    }
+    
+    // Simulate random operations
+    if (Math.random() < 0.2) {
+      const operationTypes = ['loading', 'unloading', 'inspection', 'refueling'];
+      const randomType = operationTypes[Math.floor(Math.random() * operationTypes.length)];
+      
+      portOperationsTotal.labels(randomType, 'success').inc();
+      
+      enhancedLogger.info('Automated operation completed', {
+        operationType: randomType,
+        automated: true
+      });
+    }
+  }, 30000); // Every 30 seconds
+}
+
+// Export cleanup function for tests
+export const cleanup = async () => {
+  if (backgroundInterval) {
+    // eslint-disable-next-line no-undef
+    clearInterval(backgroundInterval);
+    backgroundInterval = null;
+  }
+  
+  if (fluentClient && fluentClient.end) {
+    return new Promise((resolve) => {
+      fluentClient.end(resolve);
+    });
+  }
 };
 
+// Graceful shutdown function
+const gracefulShutdown = async (signal) => {
+  enhancedLogger.info(`${signal} received, shutting down gracefully`);
+  await cleanup();
+  process.exit(0);
+};
+
+// Set up signal handlers
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-app.listen(PORT, () => {
- enhancedLogger.info('PortTrack API server started', {
-   port: PORT,
-   environment: NODE_ENV,
-   nodeVersion: process.version,
-   fluentdHost: process.env.FLUENTD_HOST || 'localhost',
-   fluentdPort: process.env.FLUENTD_PORT || 24224
- });
-});
+// Only start the server if not in test mode
+if (NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    enhancedLogger.info('PortTrack API server started', {
+      port: PORT,
+      environment: NODE_ENV,
+      nodeVersion: process.version,
+      fluentdHost: process.env.FLUENTD_HOST || 'localhost',
+      fluentdPort: process.env.FLUENTD_PORT || 24224
+    });
+  });
+}
 
 export default app;
