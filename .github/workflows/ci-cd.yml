@@ -185,6 +185,7 @@ jobs:
             echo "⚠️  LoadBalancer not ready, skipping external tests"
           fi
 
+# For the Staging Success notification
       - name: Notify Slack - Staging Success
         if: success()
         uses: 8398a7/action-slack@v3
@@ -205,7 +206,7 @@ jobs:
               }
             ]
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   # Deploy to Production (Blue-Green)
   deploy-production:
@@ -354,6 +355,7 @@ jobs:
           
           echo "✅ Scaled down $PREVIOUS_ENV environment to 1 replica"
 
+      # For the Production Success notification (around line 373):
       - name: Notify Slack - Production Success
         if: success()
         uses: 8398a7/action-slack@v3
@@ -384,8 +386,9 @@ jobs:
               }
             ]
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
+      # For the Production Failed notification (around line 399):
       - name: Notify Slack - Production Failed
         if: failure()
         uses: 8398a7/action-slack@v3
@@ -406,7 +409,7 @@ jobs:
               }
             ]
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   # Manual Rollback Job
   rollback-production:
@@ -463,4 +466,4 @@ jobs:
               }
             ]
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
