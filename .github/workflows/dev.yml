@@ -1,0 +1,50 @@
+# .github/workflows/dev.yml
+name: Development Workflow
+
+on:
+  push:
+    branches-ignore: [main, staging, develop]
+  pull_request:
+    branches: [main, staging, develop]
+
+jobs:
+  # Quick validation for feature branches
+  validate:
+    name: Validate Feature Branch
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.17.1
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.17.1'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Docker image (test only)
+        run: |
+          docker build -t porttrack-test:${{ github.sha }} .
+          docker run --rm porttrack-test:${{ github.sha }} node -e "console.log('✅ Container runs successfully')"
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ All checks passed! Ready for review.\n\n- ✅ Linting passed\n- ✅ Tests passed\n- ✅ Docker build successful'
+            })

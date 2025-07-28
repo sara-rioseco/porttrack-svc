@@ -1,0 +1,169 @@
+# .github/workflows/manual-ops.yml
+name: Manual Operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Operation to perform'
+        required: true
+        default: 'rollback'
+        type: choice
+        options:
+          - rollback
+          - restart
+          - scale-up
+          - scale-down
+          - health-check
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+      replicas:
+        description: 'Number of replicas (for scaling operations)'
+        required: false
+        default: '3'
+
+jobs:
+  manual-operation:
+    name: Execute Manual Operation
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+            echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > kubeconfig
+          else
+            echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
+          fi
+          export KUBECONFIG=kubeconfig
+          kubectl config current-context
+
+      - name: Execute Rollback
+        if: github.event.inputs.operation == 'rollback'
+        run: |
+          export KUBECONFIG=kubeconfig
+          ENV=${{ github.event.inputs.environment }}
+          NAMESPACE="porttrack-$ENV"
+          
+          if [ "$ENV" = "production" ]; then
+            # Blue-Green rollback
+            CURRENT=$(kubectl get service porttrack-service -n $NAMESPACE -o jsonpath='{.spec.selector.version}')
+            PREVIOUS=$([ "$CURRENT" = "blue" ] && echo "green" || echo "blue")
+            
+            kubectl patch service porttrack-service \
+              -p "{\"spec\":{\"selector\":{\"version\":\"$PREVIOUS\"}}}" \
+              -n $NAMESPACE
+            
+            echo "✅ Rolled back from $CURRENT to $PREVIOUS"
+          else
+            # Rolling rollback
+            kubectl rollout undo deployment/porttrack-app -n $NAMESPACE
+            kubectl rollout status deployment/porttrack-app -n $NAMESPACE
+            echo "✅ Rolled back deployment in $ENV"
+          fi
+
+      - name: Execute Restart
+        if: github.event.inputs.operation == 'restart'
+        run: |
+          export KUBECONFIG=kubeconfig
+          ENV=${{ github.event.inputs.environment }}
+          NAMESPACE="porttrack-$ENV"
+          
+          if [ "$ENV" = "production" ]; then
+            # Restart both blue and green
+            kubectl rollout restart deployment/porttrack-app-blue -n $NAMESPACE
+            kubectl rollout restart deployment/porttrack-app-green -n $NAMESPACE
+          else
+            kubectl rollout restart deployment/porttrack-app -n $NAMESPACE
+          fi
+          
+          echo "✅ Restarted deployments in $ENV"
+
+      - name: Execute Scale Up
+        if: github.event.inputs.operation == 'scale-up'
+        run: |
+          export KUBECONFIG=kubeconfig
+          ENV=${{ github.event.inputs.environment }}
+          NAMESPACE="porttrack-$ENV"
+          REPLICAS=${{ github.event.inputs.replicas }}
+          
+          if [ "$ENV" = "production" ]; then
+            kubectl scale deployment porttrack-app-blue --replicas=$REPLICAS -n $NAMESPACE
+            kubectl scale deployment porttrack-app-green --replicas=$REPLICAS -n $NAMESPACE
+          else
+            kubectl scale deployment porttrack-app --replicas=$REPLICAS -n $NAMESPACE
+          fi
+          
+          echo "✅ Scaled to $REPLICAS replicas in $ENV"
+
+      - name: Execute Scale Down
+        if: github.event.inputs.operation == 'scale-down'
+        run: |
+          export KUBECONFIG=kubeconfig
+          ENV=${{ github.event.inputs.environment }}
+          NAMESPACE="porttrack-$ENV"
+          REPLICAS=${{ github.event.inputs.replicas }}
+          
+          if [ "$ENV" = "production" ]; then
+            kubectl scale deployment porttrack-app-blue --replicas=$REPLICAS -n $NAMESPACE
+            kubectl scale deployment porttrack-app-green --replicas=$REPLICAS -n $NAMESPACE
+          else
+            kubectl scale deployment porttrack-app --replicas=$REPLICAS -n $NAMESPACE
+          fi
+          
+          echo "✅ Scaled down to $REPLICAS replicas in $ENV"
+
+      - name: Execute Health Check
+        if: github.event.inputs.operation == 'health-check'
+        run: |
+          export KUBECONFIG=kubeconfig
+          ENV=${{ github.event.inputs.environment }}
+          NAMESPACE="porttrack-$ENV"
+          
+          echo "🔍 Health check for $ENV environment:"
+          
+          # Check deployments
+          kubectl get deployments -n $NAMESPACE
+          
+          # Check pods
+          kubectl get pods -n $NAMESPACE
+          
+          # Check services
+          kubectl get services -n $NAMESPACE
+          
+          # Test health endpoint
+          kubectl port-forward service/porttrack-service 8082:8082 -n $NAMESPACE &
+          sleep 5
+          
+          curl -f http://localhost:8082/health || echo "❌ Health check failed"
+          curl -f http://localhost:8082/metrics || echo "❌ Metrics endpoint failed"
+          
+          pkill -f "kubectl port-forward" || true
+          
+          echo "✅ Health check completed"
+
+      - name: Notify Slack
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            🔧 Manual operation completed
+            Operation: ${{ github.event.inputs.operation }}
+            Environment: ${{ github.event.inputs.environment }}
+            Triggered by: ${{ github.actor }}
+            Status: ${{ job.status }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
