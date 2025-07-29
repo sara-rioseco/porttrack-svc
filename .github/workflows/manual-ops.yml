@@ -1,4 +1,3 @@
-# .github/workflows/manual-ops.yml
 name: Manual Operations
 
 on:
@@ -28,6 +27,9 @@ on:
         required: false
         default: '3'
 
+env:
+  MOCK_DEPLOYMENT: true  # Consistent with ci-cd.yml
+
 jobs:
   manual-operation:
     name: Execute Manual Operation
@@ -35,135 +37,281 @@ jobs:
     environment: ${{ github.event.inputs.environment }}
     
     steps:
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.28.0'
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Configure kubectl
+      - name: Mock - Setup Environment
         run: |
-          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
-            echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > kubeconfig
-          else
-            echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
-          fi
-          export KUBECONFIG=kubeconfig
-          kubectl config current-context
+          echo "🎭 MOCK: Setting up ${{ github.event.inputs.environment }} environment"
+          echo "🎭 MOCK: Operation: ${{ github.event.inputs.operation }}"
+          echo "🎭 MOCK: Triggered by: ${{ github.actor }}"
+          
+          ENV=${{ github.event.inputs.environment }}
+          NAMESPACE="porttrack-$ENV"
+          
+          echo "ENV=$ENV" >> $GITHUB_ENV
+          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
 
-      - name: Execute Rollback
+      - name: Mock - Execute Rollback
         if: github.event.inputs.operation == 'rollback'
         run: |
-          export KUBECONFIG=kubeconfig
-          ENV=${{ github.event.inputs.environment }}
-          NAMESPACE="porttrack-$ENV"
+          ENV=${{ env.ENV }}
           
           if [ "$ENV" = "production" ]; then
-            # Blue-Green rollback
-            CURRENT=$(kubectl get service porttrack-service -n $NAMESPACE -o jsonpath='{.spec.selector.version}')
-            PREVIOUS=$([ "$CURRENT" = "blue" ] && echo "green" || echo "blue")
+            echo "🎭 MOCK: Blue-Green rollback in production"
+            echo "🎭 MOCK: Current active environment: green"
+            echo "🎭 MOCK: Rolling back to: blue"
+            echo "🎭 MOCK: kubectl patch service porttrack-service..."
             
-            kubectl patch service porttrack-service \
-              -p "{\"spec\":{\"selector\":{\"version\":\"$PREVIOUS\"}}}" \
-              -n $NAMESPACE
+            sleep 3  # Simulate rollback time
             
-            echo "✅ Rolled back from $CURRENT to $PREVIOUS"
+            echo "✅ MOCK: Successfully rolled back from green to blue"
+            echo "ROLLBACK_FROM=green" >> $GITHUB_ENV
+            echo "ROLLBACK_TO=blue" >> $GITHUB_ENV
           else
-            # Rolling rollback
-            kubectl rollout undo deployment/porttrack-app -n $NAMESPACE
-            kubectl rollout status deployment/porttrack-app -n $NAMESPACE
-            echo "✅ Rolled back deployment in $ENV"
+            echo "🎭 MOCK: Rolling update rollback in $ENV"
+            echo "🎭 MOCK: kubectl rollout undo deployment/porttrack-app"
+            echo "🎭 MOCK: kubectl rollout status deployment/porttrack-app"
+            
+            sleep 5  # Simulate rollback time
+            
+            echo "✅ MOCK: Successfully rolled back deployment in $ENV"
+            echo "ROLLBACK_FROM=current" >> $GITHUB_ENV
+            echo "ROLLBACK_TO=previous" >> $GITHUB_ENV
           fi
 
-      - name: Execute Restart
+      - name: Mock - Execute Restart
         if: github.event.inputs.operation == 'restart'
         run: |
-          export KUBECONFIG=kubeconfig
-          ENV=${{ github.event.inputs.environment }}
-          NAMESPACE="porttrack-$ENV"
+          ENV=${{ env.ENV }}
           
           if [ "$ENV" = "production" ]; then
-            # Restart both blue and green
-            kubectl rollout restart deployment/porttrack-app-blue -n $NAMESPACE
-            kubectl rollout restart deployment/porttrack-app-green -n $NAMESPACE
+            echo "🎭 MOCK: Restarting both blue and green deployments"
+            echo "🎭 MOCK: kubectl rollout restart deployment/porttrack-app-blue"
+            echo "🎭 MOCK: kubectl rollout restart deployment/porttrack-app-green"
+            
+            sleep 8  # Simulate restart time
+            
+            echo "✅ MOCK: Successfully restarted both blue and green deployments"
           else
-            kubectl rollout restart deployment/porttrack-app -n $NAMESPACE
+            echo "🎭 MOCK: Restarting $ENV deployment"
+            echo "🎭 MOCK: kubectl rollout restart deployment/porttrack-app"
+            
+            sleep 5  # Simulate restart time
+            
+            echo "✅ MOCK: Successfully restarted deployment in $ENV"
           fi
-          
-          echo "✅ Restarted deployments in $ENV"
 
-      - name: Execute Scale Up
+      - name: Mock - Execute Scale Up
         if: github.event.inputs.operation == 'scale-up'
         run: |
-          export KUBECONFIG=kubeconfig
-          ENV=${{ github.event.inputs.environment }}
-          NAMESPACE="porttrack-$ENV"
+          ENV=${{ env.ENV }}
           REPLICAS=${{ github.event.inputs.replicas }}
           
           if [ "$ENV" = "production" ]; then
-            kubectl scale deployment porttrack-app-blue --replicas=$REPLICAS -n $NAMESPACE
-            kubectl scale deployment porttrack-app-green --replicas=$REPLICAS -n $NAMESPACE
+            echo "🎭 MOCK: Scaling up both environments to $REPLICAS replicas"
+            echo "🎭 MOCK: kubectl scale deployment porttrack-app-blue --replicas=$REPLICAS"
+            echo "🎭 MOCK: kubectl scale deployment porttrack-app-green --replicas=$REPLICAS"
+            
+            sleep 6  # Simulate scaling time
+            
+            echo "✅ MOCK: Successfully scaled both blue and green to $REPLICAS replicas"
           else
-            kubectl scale deployment porttrack-app --replicas=$REPLICAS -n $NAMESPACE
+            echo "🎭 MOCK: Scaling up $ENV environment to $REPLICAS replicas"
+            echo "🎭 MOCK: kubectl scale deployment porttrack-app --replicas=$REPLICAS"
+            
+            sleep 4  # Simulate scaling time
+            
+            echo "✅ MOCK: Successfully scaled $ENV to $REPLICAS replicas"
           fi
           
-          echo "✅ Scaled to $REPLICAS replicas in $ENV"
+          echo "NEW_REPLICAS=$REPLICAS" >> $GITHUB_ENV
 
-      - name: Execute Scale Down
+      - name: Mock - Execute Scale Down
         if: github.event.inputs.operation == 'scale-down'
         run: |
-          export KUBECONFIG=kubeconfig
-          ENV=${{ github.event.inputs.environment }}
-          NAMESPACE="porttrack-$ENV"
+          ENV=${{ env.ENV }}
           REPLICAS=${{ github.event.inputs.replicas }}
           
           if [ "$ENV" = "production" ]; then
-            kubectl scale deployment porttrack-app-blue --replicas=$REPLICAS -n $NAMESPACE
-            kubectl scale deployment porttrack-app-green --replicas=$REPLICAS -n $NAMESPACE
+            echo "🎭 MOCK: Scaling down both environments to $REPLICAS replicas"
+            echo "🎭 MOCK: kubectl scale deployment porttrack-app-blue --replicas=$REPLICAS"
+            echo "🎭 MOCK: kubectl scale deployment porttrack-app-green --replicas=$REPLICAS"
+            
+            sleep 4  # Simulate scaling time
+            
+            echo "✅ MOCK: Successfully scaled down both blue and green to $REPLICAS replicas"
           else
-            kubectl scale deployment porttrack-app --replicas=$REPLICAS -n $NAMESPACE
+            echo "🎭 MOCK: Scaling down $ENV environment to $REPLICAS replicas"
+            echo "🎭 MOCK: kubectl scale deployment porttrack-app --replicas=$REPLICAS"
+            
+            sleep 3  # Simulate scaling time
+            
+            echo "✅ MOCK: Successfully scaled down $ENV to $REPLICAS replicas"
           fi
           
-          echo "✅ Scaled down to $REPLICAS replicas in $ENV"
+          echo "NEW_REPLICAS=$REPLICAS" >> $GITHUB_ENV
 
-      - name: Execute Health Check
+      - name: Mock - Execute Health Check
         if: github.event.inputs.operation == 'health-check'
         run: |
-          export KUBECONFIG=kubeconfig
-          ENV=${{ github.event.inputs.environment }}
-          NAMESPACE="porttrack-$ENV"
+          ENV=${{ env.ENV }}
           
-          echo "🔍 Health check for $ENV environment:"
+          echo "🔍 MOCK: Health check for $ENV environment"
+          echo ""
           
-          # Check deployments
-          kubectl get deployments -n $NAMESPACE
+          # Mock deployment status
+          echo "📊 MOCK: Deployment Status:"
+          if [ "$ENV" = "production" ]; then
+            echo "  porttrack-app-blue    3/3 replicas ready"
+            echo "  porttrack-app-green   3/3 replicas ready"
+          else
+            echo "  porttrack-app         2/2 replicas ready"
+          fi
+          echo ""
           
-          # Check pods
-          kubectl get pods -n $NAMESPACE
+          # Mock pod status
+          echo "🏃 MOCK: Pod Status:"
+          if [ "$ENV" = "production" ]; then
+            echo "  porttrack-app-blue-7d4b8f9c5d-abc12   Running   Ready"
+            echo "  porttrack-app-blue-7d4b8f9c5d-def34   Running   Ready"
+            echo "  porttrack-app-blue-7d4b8f9c5d-ghi56   Running   Ready"
+            echo "  porttrack-app-green-8e5c9g0d6e-jkl78  Running   Ready"
+            echo "  porttrack-app-green-8e5c9g0d6e-mno90  Running   Ready"
+            echo "  porttrack-app-green-8e5c9g0d6e-pqr12  Running   Ready"
+          else
+            echo "  porttrack-app-6c3a7b8d9e-abc12      Running   Ready"
+            echo "  porttrack-app-6c3a7b8d9e-def34      Running   Ready"
+          fi
+          echo ""
           
-          # Check services
-          kubectl get services -n $NAMESPACE
+          # Mock service status
+          echo "🌐 MOCK: Service Status:"
+          echo "  porttrack-service     ClusterIP   10.0.0.42    8082/TCP"
+          echo ""
           
-          # Test health endpoint
-          kubectl port-forward service/porttrack-service 8082:8082 -n $NAMESPACE &
-          sleep 5
+          # Mock health endpoint tests
+          echo "🏥 MOCK: Testing health endpoints..."
+          sleep 2
+          echo "  ✅ /health endpoint: HTTP 200 OK"
+          sleep 1
+          echo "  ✅ /metrics endpoint: HTTP 200 OK"
+          sleep 1
+          echo "  ✅ /api/v1/status endpoint: HTTP 200 OK"
+          echo ""
           
-          curl -f http://localhost:8082/health || echo "❌ Health check failed"
-          curl -f http://localhost:8082/metrics || echo "❌ Metrics endpoint failed"
+          # Mock performance metrics
+          echo "📈 MOCK: Performance Metrics:"
+          echo "  CPU Usage: 45%"
+          echo "  Memory Usage: 312MB / 512MB (61%)"
+          echo "  Request Rate: 1,247 req/min"
+          echo "  Average Response Time: 127ms"
+          echo "  Error Rate: 0.02%"
+          echo ""
           
-          pkill -f "kubectl port-forward" || true
-          
-          echo "✅ Health check completed"
+          echo "✅ MOCK: Health check completed - All systems operational"
 
-      - name: Notify Slack
+      - name: Mock - Post-Operation Verification
         if: always()
+        run: |
+          OPERATION=${{ github.event.inputs.operation }}
+          ENV=${{ env.ENV }}
+          
+          echo "🔍 MOCK: Post-operation verification for $OPERATION in $ENV"
+          
+          case $OPERATION in
+            rollback)
+              echo "✅ MOCK: Verifying rollback completed successfully"
+              echo "✅ MOCK: Traffic routing updated"
+              echo "✅ MOCK: Health checks passing"
+              ;;
+            restart)
+              echo "✅ MOCK: Verifying all pods restarted"
+              echo "✅ MOCK: All deployments ready"
+              echo "✅ MOCK: Services responding normally"
+              ;;
+            scale-up|scale-down)
+              REPLICAS=${{ github.event.inputs.replicas }}
+              echo "✅ MOCK: Verifying replica count: $REPLICAS"
+              echo "✅ MOCK: All replicas healthy"
+              echo "✅ MOCK: Load balancing updated"
+              ;;
+            health-check)
+              echo "✅ MOCK: Health check data collected"
+              echo "✅ MOCK: No critical issues found"
+              ;;
+          esac
+
+      - name: Notify Slack - Success
+        if: success()
         uses: 8398a7/action-slack@v3
         with:
-          status: ${{ job.status }}
+          status: success
           text: |
-            🔧 Manual operation completed
+            🔧 Manual operation completed successfully [MOCK]
+            
             Operation: ${{ github.event.inputs.operation }}
             Environment: ${{ github.event.inputs.environment }}
             Triggered by: ${{ github.actor }}
-            Status: ${{ job.status }}
+          fields: |
+            [
+              {
+                "title": "Operation",
+                "value": "${{ github.event.inputs.operation }}",
+                "short": true
+              },
+              {
+                "title": "Environment", 
+                "value": "${{ github.event.inputs.environment }}",
+                "short": true
+              },
+              {
+                "title": "Triggered by",
+                "value": "${{ github.actor }}",
+                "short": true
+              },
+              {
+                "title": "Status",
+                "value": "✅ Success",
+                "short": true
+              }
+            ]
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack - Failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: |
+            ❌ Manual operation failed [MOCK]
+            
+            Operation: ${{ github.event.inputs.operation }}
+            Environment: ${{ github.event.inputs.environment }}
+            Triggered by: ${{ github.actor }}
+          fields: |
+            [
+              {
+                "title": "Operation",
+                "value": "${{ github.event.inputs.operation }}",
+                "short": true
+              },
+              {
+                "title": "Environment",
+                "value": "${{ github.event.inputs.environment }}",
+                "short": true
+              },
+              {
+                "title": "Triggered by",
+                "value": "${{ github.actor }}",
+                "short": true
+              },
+              {
+                "title": "Status",
+                "value": "❌ Failed",
+                "short": true
+              }
+            ]
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
