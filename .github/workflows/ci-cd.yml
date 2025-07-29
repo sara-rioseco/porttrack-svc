@@ -666,3 +666,299 @@ jobs:
             ]
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Monitoring Setup Job
+  setup-monitoring:
+    name: Setup Monitoring Stack
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Mock - Deploy Prometheus Stack
+        run: |
+          ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+          
+          echo "🔍 MOCK: Setting up Prometheus monitoring stack for $ENV"
+          echo "🎭 MOCK: Deploying Prometheus server..."
+          echo "🎭 MOCK: helm install prometheus prometheus-community/kube-prometheus-stack"
+          
+          sleep 5
+          
+          echo "📊 MOCK: Configuring Grafana dashboards..."
+          echo "  - PortTrack Operations Dashboard"
+          echo "  - Application Performance Dashboard" 
+          echo "  - Infrastructure Monitoring Dashboard"
+          echo "  - Security Monitoring Dashboard"
+          
+          sleep 3
+          
+          echo "🚨 MOCK: Setting up AlertManager rules..."
+          echo "  - High Error Rate Alert (>5% for 2min)"
+          echo "  - Database Connection Issues"
+          echo "  - High Response Time (>500ms)"
+          echo "  - Container Resource Limits"
+          
+          echo "✅ MOCK: Prometheus/Grafana stack deployed successfully"
+
+      - name: Mock - Deploy ELK Stack
+        run: |
+          ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+          
+          echo "📝 MOCK: Setting up ELK stack for centralized logging"
+          echo "🎭 MOCK: Deploying Elasticsearch cluster..."
+          echo "🎭 MOCK: kubectl apply -f elasticsearch-cluster.yaml"
+          
+          sleep 4
+          
+          echo "🔄 MOCK: Setting up Logstash for log processing..."
+          echo "🎭 MOCK: kubectl apply -f logstash-config.yaml"
+          
+          sleep 3
+          
+          echo "📈 MOCK: Deploying Kibana dashboard..."
+          echo "🎭 MOCK: kubectl apply -f kibana-service.yaml"
+          
+          sleep 2
+          
+          echo "📋 MOCK: Configuring log patterns:"
+          echo "  - Application logs: /var/log/porttrack/*.log"
+          echo "  - Access logs: /var/log/nginx/access.log"
+          echo "  - Security logs: /var/log/auth.log"
+          echo "  - Database logs: /var/log/postgresql/*.log"
+          
+          echo "✅ MOCK: ELK stack deployed successfully"
+
+      - name: Mock - Configure CloudWatch Integration
+        run: |
+          ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+          
+          echo "☁️ MOCK: Setting up CloudWatch integration"
+          echo "🎭 MOCK: Installing CloudWatch agent..."
+          echo "🎭 MOCK: aws logs create-log-group --log-group-name /porttrack/$ENV"
+          
+          sleep 3
+          
+          echo "📊 MOCK: Configuring CloudWatch metrics:"
+          echo "  - Custom application metrics"
+          echo "  - Container insights"
+          echo "  - API Gateway metrics"
+          echo "  - Database performance insights"
+          
+          echo "🔔 MOCK: Setting up CloudWatch alarms..."
+          echo "  - High CPU utilization (>80%)"
+          echo "  - Memory usage (>85%)"
+          echo "  - Disk space (>90%)"
+          echo "  - Network anomalies"
+          
+          echo "✅ MOCK: CloudWatch integration configured"
+
+      - name: Mock - Setup Health Check Monitoring
+        run: |
+          ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+          
+          echo "🏥 MOCK: Configuring health check monitoring"
+          echo "🎭 MOCK: Setting up endpoint monitoring every 30 seconds..."
+          
+          cat << 'EOF'
+          📊 MOCK: Health Check Configuration:
+          Endpoints monitored:
+            - GET /health (every 30s)
+            - GET /api/v1/status (every 30s)  
+            - GET /metrics (every 60s)
+            - GET /readiness (every 30s)
+            - GET /liveness (every 30s)
+          
+          Thresholds:
+            - Response time: >500ms = WARNING, >1000ms = CRITICAL
+            - Error rate: >1% = WARNING, >5% = CRITICAL
+            - Availability: <99% = WARNING, <95% = CRITICAL
+          
+          Automatic Actions:
+            - Error rate >5% for 2min → Automatic rollback
+            - Response time >1000ms for 5min → Scale up
+            - Availability <95% for 1min → Alert on-call team
+          EOF
+          
+          echo "✅ MOCK: Health monitoring configured successfully"
+
+  # Log Analysis Job
+  log-analysis:
+    name: Log Analysis & Audit
+    runs-on: ubuntu-latest
+    needs: [deploy-production, setup-monitoring]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Mock - Analyze Application Logs
+        run: |
+          echo "📝 MOCK: Analyzing application logs post-deployment"
+          
+          sleep 3
+          
+          echo "🔍 MOCK: Log Analysis Results:"
+          echo "  - Total requests: 15,847"
+          echo "  - Error rate: 0.02% (3 errors out of 15,847)"
+          echo "  - Average response time: 127ms"
+          echo "  - 95th percentile: 245ms"
+          echo "  - 99th percentile: 389ms"
+          echo ""
+          echo "📊 MOCK: Error Breakdown:"
+          echo "  - HTTP 500: 1 (database timeout)"
+          echo "  - HTTP 429: 2 (rate limiting)"
+          echo "  - HTTP 400: 0"
+          echo ""
+          echo "🔐 MOCK: Security Events:"
+          echo "  - Failed authentication attempts: 12"
+          echo "  - Suspicious IP addresses: 0"
+          echo "  - SQL injection attempts: 0"
+          echo "  - XSS attempts: 0"
+          
+          echo "✅ MOCK: Log analysis completed - No critical issues found"
+
+      - name: Mock - Generate Performance Report
+        run: |
+          echo "📊 MOCK: Generating post-deployment performance report"
+          
+          cat << 'EOF'
+          🎯 MOCK: Performance Report Summary
+          
+          ⚡ Application Performance:
+            - Average response time: 127ms (target: <200ms) ✅
+            - Throughput: 1,247 req/min (target: >1,000) ✅
+            - Error rate: 0.02% (target: <1%) ✅
+            - Availability: 99.98% (target: >99.9%) ✅
+          
+          🖥️ Infrastructure Metrics:
+            - CPU usage: 45% (target: <70%) ✅
+            - Memory usage: 61% (target: <80%) ✅
+            - Disk I/O: Normal ✅
+            - Network latency: 12ms ✅
+          
+          🚢 Port Operations Metrics:
+            - Active vessels: 23
+            - Completed operations: 156
+            - Queue length: 4 vessels
+            - Average processing time: 2.3 hours
+          
+          🔍 Recommendations:
+            - Consider implementing cache warming for faster response times
+            - Monitor database connection pool during peak hours
+            - Review rate limiting thresholds based on traffic patterns
+          EOF
+          
+          echo "✅ MOCK: Performance report generated"
+
+  # Alert Testing Job
+  test-alerts:
+    name: Test Alert System
+    runs-on: ubuntu-latest
+    needs: setup-monitoring
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Mock - Test Prometheus Alerts
+        run: |
+          echo "🚨 MOCK: Testing Prometheus alert system"
+          
+          echo "🎭 MOCK: Simulating high error rate alert..."
+          sleep 2
+          echo "  ✅ Alert triggered: HighErrorRate"
+          echo "  ✅ Notification sent to Slack #alerts channel"
+          echo "  ✅ AlertManager webhook fired"
+          
+          echo "🎭 MOCK: Simulating database connection issue..."
+          sleep 2
+          echo "  ✅ Alert triggered: DatabaseConnectionIssue"
+          echo "  ✅ PagerDuty incident created"
+          echo "  ✅ On-call engineer notified"
+          
+          echo "🎭 MOCK: Testing alert recovery..."
+          sleep 2
+          echo "  ✅ Recovery notification sent"
+          echo "  ✅ Incident auto-resolved"
+          
+          echo "✅ MOCK: All alert tests passed"
+
+      - name: Mock - Test ELK Alert Rules
+        run: |
+          echo "📝 MOCK: Testing ELK stack alert rules"
+          
+          echo "🎭 MOCK: Testing security alert patterns..."
+          sleep 2
+          echo "  ✅ SQL injection detection: PASSED"
+          echo "  ✅ Failed login threshold: PASSED"
+          echo "  ✅ Suspicious user agent: PASSED"
+          
+          echo "🎭 MOCK: Testing application alert patterns..."
+          sleep 2
+          echo "  ✅ High error rate detection: PASSED"
+          echo "  ✅ Slow query detection: PASSED"
+          echo "  ✅ Memory leak detection: PASSED"
+          
+          echo "✅ MOCK: ELK alert rules validated"
+
+      - name: Mock - Validate Monitoring Endpoints
+        run: |
+          echo "🔍 MOCK: Validating monitoring endpoints"
+          
+          echo "🎭 MOCK: Testing Grafana dashboards..."
+          echo "  ✅ http://grafana.porttrack.local/d/porttrack-ops"
+          echo "  ✅ http://grafana.porttrack.local/d/app-performance"
+          echo "  ✅ http://grafana.porttrack.local/d/infrastructure"
+          echo "  ✅ http://grafana.porttrack.local/d/security"
+          
+          echo "🎭 MOCK: Testing Prometheus metrics..."
+          echo "  ✅ http://prometheus.porttrack.local/targets"
+          echo "  ✅ http://prometheus.porttrack.local/rules"
+          echo "  ✅ http://prometheus.porttrack.local/alerts"
+          
+          echo "🎭 MOCK: Testing Kibana dashboards..."
+          echo "  ✅ http://kibana.porttrack.local/app/discover"
+          echo "  ✅ http://kibana.porttrack.local/app/dashboard"
+          echo "  ✅ http://kibana.porttrack.local/app/security"
+          
+          echo "✅ MOCK: All monitoring endpoints are accessible"
+
+      - name: Notify Slack - Monitoring Status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            📊 Monitoring stack deployment completed [MOCK]
+            
+            ✅ Prometheus/Grafana: Active
+            ✅ ELK Stack: Active  
+            ✅ CloudWatch: Integrated
+            ✅ Health Checks: Configured
+            ✅ Alert System: Tested
+            
+            🔍 Dashboards ready at:
+            • Grafana: http://grafana.porttrack.local
+            • Kibana: http://kibana.porttrack.local
+            • Prometheus: http://prometheus.porttrack.local
+          fields: |
+            [
+              {
+                "title": "Environment",
+                "value": "Production",
+                "short": true
+              },
+              {
+                "title": "Monitoring Tools",
+                "value": "Prometheus + Grafana + ELK + CloudWatch",
+                "short": true
+              },
+              {
+                "title": "Health Check Status",
+                "value": "✅ All systems operational",
+                "short": false
+              }
+            ]
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

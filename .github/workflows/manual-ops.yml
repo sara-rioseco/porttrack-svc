@@ -14,6 +14,9 @@ on:
           - scale-up
           - scale-down
           - health-check
+          - monitoring-check
+          - log-analysis
+          - alert-test
       environment:
         description: 'Target environment'
         required: true
@@ -211,6 +214,164 @@ jobs:
           
           echo "✅ MOCK: Health check completed - All systems operational"
 
+      - name: Mock - Execute Monitoring Check
+        if: github.event.inputs.operation == 'monitoring-check'
+        run: |
+          ENV=${{ env.ENV }}
+          
+          echo "📊 MOCK: Comprehensive monitoring system check for $ENV"
+          echo ""
+          
+          # Prometheus status
+          echo "🔍 MOCK: Prometheus Status:"
+          echo "  ✅ Prometheus server: Running (2/2 replicas)"
+          echo "  ✅ AlertManager: Running (3/3 replicas)"
+          echo "  ✅ Node exporters: 6/6 healthy"
+          echo "  ✅ Application metrics: Collecting"
+          echo "  📊 Active alerts: 0 critical, 2 warnings"
+          echo ""
+          
+          # Grafana status
+          echo "📈 MOCK: Grafana Status:"
+          echo "  ✅ Grafana server: Running"
+          echo "  ✅ Dashboards: 8/8 loading correctly"
+          echo "  ✅ Data sources: 3/3 connected"
+          echo "  ✅ Active users: 12"
+          echo ""
+          
+          # ELK stack status
+          echo "📝 MOCK: ELK Stack Status:"
+          echo "  ✅ Elasticsearch: Green cluster (3 nodes)"
+          echo "  ✅ Logstash: Processing 1.2k events/sec"
+          echo "  ✅ Kibana: Running, 15 saved searches"
+          echo "  ✅ Index health: 99.8% (45GB total)"
+          echo ""
+          
+          # CloudWatch status
+          echo "☁️ MOCK: CloudWatch Status:"
+          echo "  ✅ Metrics: 247 custom metrics active"
+          echo "  ✅ Log groups: 8 groups, 15GB this month"
+          echo "  ✅ Alarms: 23 configured, 2 in alarm state"
+          echo "  ✅ Dashboards: 5 custom dashboards"
+          echo ""
+          
+          # Alert system status
+          echo "🚨 MOCK: Alert System Status:"
+          echo "  ✅ Slack integration: Connected"
+          echo "  ✅ PagerDuty: Connected"
+          echo "  ✅ Email notifications: Enabled"
+          echo "  ✅ Last 24h alerts: 15 (3 critical, 12 info)"
+          
+          echo "✅ MOCK: Monitoring systems are healthy and operational"
+
+      - name: Mock - Execute Log Analysis
+        if: github.event.inputs.operation == 'log-analysis'
+        run: |
+          ENV=${{ env.ENV }}
+          
+          echo "📝 MOCK: Performing comprehensive log analysis for $ENV"
+          echo ""
+          
+          # Application logs analysis
+          echo "🔍 MOCK: Application Logs Analysis (Last 24 hours):"
+          echo "  📊 Total log entries: 1,234,567"
+          echo "  ✅ INFO level: 1,198,234 (97.1%)"
+          echo "  ⚠️ WARN level: 35,892 (2.9%)"
+          echo "  ❌ ERROR level: 234 (0.02%)"
+          echo "  🚨 FATAL level: 0 (0%)"
+          echo ""
+          
+          # Error pattern analysis
+          echo "🔍 MOCK: Error Pattern Analysis:"
+          echo "  🔄 Database timeouts: 89 occurrences"
+          echo "  📞 API rate limits: 67 occurrences"
+          echo "  🔌 Connection failures: 23 occurrences"
+          echo "  🗃️ Cache misses: 156,789 occurrences"
+          echo ""
+          
+          # Security log analysis
+          echo "🔒 MOCK: Security Log Analysis:"
+          echo "  🔐 Failed login attempts: 45"
+          echo "  🌍 Unique IP addresses: 2,347"
+          echo "  🤖 Bot traffic detected: 12,456 requests"
+          echo "  🚨 Suspicious activities: 3 flagged"
+          echo ""
+          
+          # Performance insights
+          echo "⚡ MOCK: Performance Insights:"
+          echo "  📈 Average response time: 127ms"
+          echo "  📊 Slowest endpoints:"
+          echo "    - /api/v1/reports/generate: 2.3s avg"
+          echo "    - /api/v1/vessels/search: 450ms avg"
+          echo "    - /api/v1/operations/history: 380ms avg"
+          echo ""
+          
+          # Recommendations
+          echo "💡 MOCK: Recommendations:"
+          echo "  🎯 Optimize database queries for reports endpoint"
+          echo "  🔄 Consider implementing connection pooling"
+          echo "  📦 Increase cache TTL for vessel search"
+          echo "  🚨 Review and block suspicious IP: 192.168.1.100"
+          
+          echo "✅ MOCK: Log analysis completed successfully"
+
+      - name: Mock - Execute Alert Test
+        if: github.event.inputs.operation == 'alert-test'
+        run: |
+          ENV=${{ env.ENV }}
+          
+          echo "🚨 MOCK: Testing alert system for $ENV environment"
+          echo ""
+          
+          # Test Prometheus alerts
+          echo "🔍 MOCK: Testing Prometheus alerts..."
+          echo "  🎭 Simulating high CPU usage..."
+          sleep 2
+          echo "  ✅ CPU alert triggered and sent to Slack"
+          echo "  🎭 Simulating high memory usage..."
+          sleep 2
+          echo "  ✅ Memory alert triggered and sent to PagerDuty"
+          echo "  🎭 Simulating database connection failure..."
+          sleep 2
+          echo "  ✅ Database alert triggered, escalation sent to on-call"
+          echo ""
+          
+          # Test ELK alerts
+          echo "📝 MOCK: Testing ELK alert rules..."
+          echo "  🎭 Simulating security threat pattern..."
+          sleep 2
+          echo "  ✅ Security alert sent to #security-alerts channel"
+          echo "  🎭 Simulating error rate spike..."
+          sleep 2
+          echo "  ✅ Error rate alert sent to development team"
+          echo ""
+          
+          # Test CloudWatch alarms
+          echo "☁️ MOCK: Testing CloudWatch alarms..."
+          echo "  🎭 Simulating auto-scaling trigger..."
+          sleep 2
+          echo "  ✅ Auto-scaling alarm triggered successfully"
+          echo "  🎭 Simulating disk space warning..."
+          sleep 2
+          echo "  ✅ Disk space alert sent to infrastructure team"
+          echo ""
+          
+          # Test notification channels
+          echo "📢 MOCK: Testing notification channels..."
+          echo "  ✅ Slack webhooks: Responding (avg: 45ms)"
+          echo "  ✅ PagerDuty API: Responding (avg: 120ms)"
+          echo "  ✅ Email SMTP: Responding (avg: 890ms)"
+          echo "  ✅ SMS gateway: Responding (avg: 1.2s)"
+          echo ""
+          
+          # Recovery test
+          echo "🔄 MOCK: Testing alert recovery..."
+          sleep 3
+          echo "  ✅ All test alerts automatically resolved"
+          echo "  ✅ Recovery notifications sent successfully"
+          
+          echo "✅ MOCK: Alert system test completed - All systems operational"
+
       - name: Mock - Post-Operation Verification
         if: always()
         run: |
@@ -222,6 +383,40 @@ jobs:
           case $OPERATION in
             rollback)
               echo "✅ MOCK: Verifying rollback completed successfully"
+              echo "✅ MOCK: Traffic routing updated"
+              echo "✅ MOCK: Health checks passing"
+              ;;
+            restart)
+              echo "✅ MOCK: Verifying all pods restarted"
+              echo "✅ MOCK: All deployments ready"
+              echo "✅ MOCK: Services responding normally"
+              ;;
+            scale-up|scale-down)
+              REPLICAS=${{ github.event.inputs.replicas }}
+              echo "✅ MOCK: Verifying replica count: $REPLICAS"
+              echo "✅ MOCK: All replicas healthy"
+              echo "✅ MOCK: Load balancing updated"
+              ;;
+            health-check)
+              echo "✅ MOCK: Health check data collected"
+              echo "✅ MOCK: No critical issues found"
+              ;;
+            monitoring-check)
+              echo "✅ MOCK: Monitoring systems verified"
+              echo "✅ MOCK: All metrics collecting properly"
+              echo "✅ MOCK: Dashboards accessible"
+              ;;
+            log-analysis)
+              echo "✅ MOCK: Log analysis completed"
+              echo "✅ MOCK: Performance insights generated"
+              echo "✅ MOCK: Security review completed"
+              ;;
+            alert-test)
+              echo "✅ MOCK: Alert system tested"
+              echo "✅ MOCK: All notification channels verified"
+              echo "✅ MOCK: Recovery procedures validated"
+              ;;
+          esac MOCK: Verifying rollback completed successfully"
               echo "✅ MOCK: Traffic routing updated"
               echo "✅ MOCK: Health checks passing"
               ;;
