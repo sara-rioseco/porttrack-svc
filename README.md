@@ -6,14 +6,20 @@ A comprehensive port management backend service designed to demonstrate modern D
 
 **PortTrack** is a mock backend service that simulates port operations management. This project showcases a complete DevOps implementation with automated deployment pipelines, comprehensive monitoring stack, and operational management tools.
 
-#### Key Features
+### Key Features
 
 **Port Operations Management:** Ship tracking, berth management, staff coordination
+
 **Real-time Monitoring:** Prometheus metrics, Grafana dashboards, health checks
+
 **Centralized Logging:** ELK stack integration with structured logging
+
 **CI/CD Pipeline:** Automated testing, building, and deployment with GitHub Actions
+
 **ChatOps Integration:** Slack notifications for deployments and alerts
+
 **Container-Ready:** Docker and Docker Compose support
+
 **Security-First:** Helmet.js security headers, non-root containers
 
 ## 🏗️ Architecture
