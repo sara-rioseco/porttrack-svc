@@ -416,25 +416,6 @@ jobs:
               echo "✅ MOCK: All notification channels verified"
               echo "✅ MOCK: Recovery procedures validated"
               ;;
-          esac MOCK: Verifying rollback completed successfully"
-              echo "✅ MOCK: Traffic routing updated"
-              echo "✅ MOCK: Health checks passing"
-              ;;
-            restart)
-              echo "✅ MOCK: Verifying all pods restarted"
-              echo "✅ MOCK: All deployments ready"
-              echo "✅ MOCK: Services responding normally"
-              ;;
-            scale-up|scale-down)
-              REPLICAS=${{ github.event.inputs.replicas }}
-              echo "✅ MOCK: Verifying replica count: $REPLICAS"
-              echo "✅ MOCK: All replicas healthy"
-              echo "✅ MOCK: Load balancing updated"
-              ;;
-            health-check)
-              echo "✅ MOCK: Health check data collected"
-              echo "✅ MOCK: No critical issues found"
-              ;;
           esac
 
       - name: Notify Slack - Success
